@@ -44,6 +44,11 @@ def process_registration_ISU(message):
     user_answer = registration[message.chat.id]
     user_answer.ISU = message.text
     msg = bot.send_message(user_answer.chat_id, 'Вы учитель? Да/Нет')
+    answer = message.text
+    if answer == 'Да':
+        user_answer.is_teacher = True
+    elif answer == 'Нет':
+        user_answer.is_teacher = False
     del registration[user_answer.chat_id]
 
 bot.infinity_polling()
