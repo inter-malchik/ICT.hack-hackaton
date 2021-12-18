@@ -67,3 +67,4 @@ def process_registration_is_teacher(message):
 
 bot.infinity_polling()
 
+
