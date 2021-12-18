@@ -2,7 +2,6 @@ import telebot
 from config import TOKEN
 from checkargs import *
 
-
 class Question:
     def __init__(self, chat_id):
         self.chat_id = chat_id
@@ -17,7 +16,6 @@ class Question:
         print(self.surname)
         print(self.ISU)
         print(self.is_teacher)
-
 
 bot = telebot.TeleBot(f'{TOKEN}', parse_mode=False)
 
