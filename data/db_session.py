@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from sqlalchemy.orm import Session
 import sqlalchemy.ext.declarative as dec
+from sqlalchemy import update
 
 SqlAlchemyBase = dec.declarative_base()
 
@@ -25,7 +26,7 @@ class CurrentSeason(SqlAlchemyBase):
 
 
 class Teachers(SqlAlchemyBase):
-    __tablename__ = 'current_season'
+    __tablename__ = 'teachers'
 
     teacher_id = sa.Column(sa.Integer, primary_key=True, unique=True, nullable=False)
     token = sa.Column(sa.Integer, unique=True)

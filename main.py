@@ -6,10 +6,12 @@ from data import db_session
 from data.db_session import User
 from data.db_session import CurrentSeason
 from data.db_session import Teachers
+from data.db_session import update
 
 bot = telebot.TeleBot(f'{TOKEN}', parse_mode=False)
 db_session.global_init("db/database.db")
 registration = {}
+
 
 class Question:
     def __init__(self, chat_id):
@@ -36,7 +38,7 @@ class Question:
 
             bot.send_message(self.chat_id, 'Вы зарегистрированы.')
             if self.is_teacher:
-                teach = Teachers
+                teach = Teachers()
                 teach.teacher_id = self.chat_id
                 teach.token = self.ISU
                 db_sess.add(teach)
@@ -44,9 +46,15 @@ class Question:
 
         else:
             bot.send_message(self.chat_id, 'Вы уже зарегистрированы. (изменения внесены не будут)')
+        db_sess.close()
+
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
+    db_sess = db_session.create_session()
+    if db_sess.query(User).filter(User.id == message.chat.id).first():
+        bot.send_message(message.chat.id, "Вы уже зарегистрированы")
+        return
     bot.send_message(message.chat.id, "Привет! Я бот для обучения с элементами геймификаций.")
     registration[message.chat.id] = Question(message.chat.id)
     msg = bot.send_message(message.chat.id, 'Зарегистрируйся. Введи свое имя')
@@ -114,7 +122,7 @@ def process_registration_position(message):
 @bot.callback_query_handler(func=lambda call: call.message.chat.id in registration.keys())
 def callback(call):
     user_data = registration[call.message.chat.id]
-    #bot.answer_callback_query(callback_query_id=call.id)
+    # bot.answer_callback_query(callback_query_id=call.id)
     if call.data == 'Да':
         user_data.is_teacher = True
         del registration[user_data.chat_id]
@@ -122,5 +130,35 @@ def callback(call):
         user_data.is_teacher = False
         del registration[user_data.chat_id]
     bot.answer_callback_query(callback_query_id=call.id)
+
+
+@bot.message_handler(commands=['givepoints'])
+def giver(message):
+    db_sess = db_session.create_session()
+    if not db_sess.query(Teachers).filter(Teachers.teacher_id == message.chat.id).first():
+        bot.send_message(message.chat.id, 'вы не учитель')
+        db_sess.close()
+    else:
+        msg = bot.send_message(message.chat.id,
+                               'Введите номер ИСУ ученика, которому вы хотите добавить баллы и кол-во баллов через пробел\nпример: 123456 5')
+        bot.register_next_step_handler(msg, adding_points)
+
+
+def adding_points(message):
+    user_answer = message.text
+    try:
+        isu, points = user_answer.split(' ')
+        if check_num(isu) and check_num(points):
+            db_sess = db_session.create_session()
+            idd = db_sess.query(User).filter(User.isu_id == isu).first().id
+            entry = db_sess.query(CurrentSeason).filter(CurrentSeason.student_id == idd).first()
+            entry.points += int(points)
+            db_sess.commit()
+        else:
+            raise ValueError
+    except ValueError:
+        msg = bot.send_message(message.chat.id, 'некорректный ввод: введите еще раз')
+        bot.register_next_step_handler(msg, adding_points)
+
 
 bot.infinity_polling()
