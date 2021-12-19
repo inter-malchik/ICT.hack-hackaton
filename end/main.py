@@ -66,19 +66,29 @@ def process_registration_surname(message):
 
 def process_registration_ISU(message):
     user_answer = registration[message.chat.id]
-    user_answer.ISU = message.text
-    msg = bot.send_message(user_answer.chat_id, 'Вы учитель? Да/Нет')
-    bot.register_next_step_handler(msg, process_registration_is_teacher)
+    if message.text.is_digit():
+        user_answer.ISU = message.text
+        msg = bot.send_message(user_answer.chat_id, 'Вы учитель? Да/Нет')
+        bot.register_next_step_handler(msg, process_registration_is_teacher)
+    else:
+        msg = bot.send_message(user_answer.chat_id, 'Некорректный ввод. Попробуйте еще раз')
+        bot.register_next_step_handler(msg, process_registration_ISU)
 
 def process_registration_is_teacher(message):
     user_answer = registration[message.chat.id]
     answer = message.text
     if answer == 'Да':
         user_answer.is_teacher = True
+        del registration[user_answer.chat_id]
+        bot.send_message(message.chat.id, 'Вы успешно зарегистрировались!')
     elif answer == 'Нет':
         user_answer.is_teacher = False
-    del registration[user_answer.chat_id]
-    bot.send_message(message.chat.id, 'Вы успешно зарегистрировались!')
+        del registration[user_answer.chat_id]
+        bot.send_message(message.chat.id, 'Вы успешно зарегистрировались!')
+    else:
+        msg = bot.send_message(user_answer.chat_id, 'Некорректный ввод. Попробуйте еще раз')
+        bot.register_next_step_handler(msg, process_registration_is_teacher)
+
 @bot.message_handler(commands=['newtask'])
 def add_task(message):
     bot.send_message(message.chat.id, "Создание задания.")
@@ -92,10 +102,15 @@ def process_get_is_test(message):
     answer = message.text
     if answer == 'Да':
         user_task.question['test'] = True
+        msg = bot.send_message(user_task.user_id, 'Отлично. Введите ваше задание:')
+        bot.register_next_step_handler(msg, process_create_question)
     elif answer == 'Нет':
-        pass
-    msg = bot.send_message(user_task.user_id, 'Отлично. Введите ваше задание:')
-    bot.register_next_step_handler(msg, process_create_question)
+        user_task.question['test'] = False
+        msg = bot.send_message(user_task.user_id, 'Отлично. Введите ваше задание:')
+        bot.register_next_step_handler(msg, process_create_question)
+    else:
+        msg = bot.send_message(message.chat.id, 'Некорректный ввод. Попробуйте еще раз')
+        bot.register_next_step_handler(msg, process_get_is_test)
 
 def process_create_question(message):
     user_task = tasks[message.chat.id]
@@ -142,7 +157,7 @@ def process_get_teacher_check(message):
         task.delete()
         s.commit()
 
-@bot.message_handler(commands='default_task')
+@bot.message_handler(commands='defaulttask')
 def give_default_task(message):
     if is_teacher(message.chat.id):
         bot.send_message(message.chat.id, 'Вы преподавать')
@@ -182,7 +197,8 @@ def status(message):
 
 @bot.message_handler(commands='battle')
 def choice_target(message):
-    bot.send_message(message.chat.id, 'Это правильный ответ!')
+    bot.send_message(message.chat.id, "Введите ISU вашей цели")
+
 
 
 bot.infinity_polling()
