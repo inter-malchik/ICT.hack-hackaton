@@ -14,9 +14,7 @@ class Users(db):
     name = Column(String)
     surname = Column(String)
     ISU_id = Column(Integer)
-    Tasks = relationship('Tasks')
-    Teachers = relationship('Teachers')
-    Students = relationship('Students')
+
 
 class Teachers(db):
     __tablename__ = "Teachers"
@@ -48,9 +46,8 @@ class Students(db):
 
 class Current_season(db):
     __tablename__ = 'Current_Season'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    student_id = Column(Integer, ForeignKey('Students.student_id'))
+    # id = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey('Students.student_id'), primary_key=True)
     points = Column(Integer)
     Students = relationship('Students')
 
@@ -60,7 +57,15 @@ class Hard_table(db):
     hard_id = Column(Integer, primary_key=True, autoincrement=True)
     level = Column(String)
     points = Column(Integer)
-    Students = relationship('Tasks')
+
+class Completed_tasks(db):
+    __tablename__ = 'Completed_tasks'
+
+    id_comp_task = Column(Integer, primary_key=True, autoincrement=True)
+    student_id = Column(Integer, ForeignKey('Students.student_id'))
+    task_id = Column(Integer, ForeignKey('Tasks.question_id'))
+    Students = relationship('Students')
+    Tasks = relationship('Tasks')
 
 db.metadata.create_all(engine)
 

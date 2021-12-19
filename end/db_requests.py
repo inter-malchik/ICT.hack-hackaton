@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tables import Hard_table, Students, Tasks, Teachers, Users, Current_season
+from tables import Hard_table, Students, Tasks, Teachers, Users, Current_season, Completed_tasks
 
 engine = create_engine('postgresql+psycopg2://anton:2813@localhost/hack_bot', echo=True)
 
@@ -15,7 +15,6 @@ if hard_data == None:
     s.add(hard_1)
     s.commit()
 
-
 def add_user(chat_id, name, surname, ISU):
     user_one = Users()
 
@@ -23,9 +22,6 @@ def add_user(chat_id, name, surname, ISU):
     user_one.name = name
     user_one.surname = surname
     user_one.ISU_id = ISU
-    print('ВВВВВ')
-    print(ISU)
-    print(user_one.ISU_id)
     s.add(user_one)
     s.commit()
 
@@ -37,7 +33,12 @@ def add_student(user_id):
     student_one.money = 100
     s.add(student_one)
     s.commit()
-
+    last = s.query(Students).order_by(Students.student_id.desc()).first().student_id
+    member = Current_season()
+    member.student_id = last
+    member.points = 0
+    s.add(member)
+    s.commit()
 
 def add_teacher(user_id, token=1234323):
     teacher_one = Teachers()
@@ -47,8 +48,19 @@ def add_teacher(user_id, token=1234323):
     s.add(teacher_one)
     s.commit()
 
-def status():
-    pass
+
+def create_new_season():
+    if s.query(Current_season).first() == None:
+        data = s.query(Students.student_id).all()
+        send_data = []
+        for i in data:
+            member = Current_season()
+            member.student_id = i[0]
+            member.points = 0
+            send_data.append(member)
+        print(send_data)
+        s.add_all(send_data)
+        s.commit()
 
 def add_tassk(user_id, question):
     task_one = Tasks()
@@ -64,10 +76,49 @@ def is_teacher(user_id):
     if s.query(Teachers).filter(Teachers.user_id == user_id).first() != None:
         return True
     return False
+
 def is_student(user_id):
     if not is_teacher(user_id):
         return True
     return False
 
-id_student = 1018883729
-id_teacher = 1982891232
+def get_task():
+    task = s.query(Tasks).filter(Tasks.check == False).first()
+    return task
+
+def task_output(task):
+    user = s.query(Users).get(task.user_id)
+    if task.question['test']:
+        result = f"Задания от ученика {user.name} {user.surname}\n\
+{task.question['question']}\n\
+A - {task.question['answer'][0]}\n\
+B - {task.question['answer'][1]}\n\
+C - {task.question['answer'][2]}\n\
+D - {task.question['answer'][3]}\n\
+Предлагаемый правильный ответ: {task.question['correct']}"
+    else:
+        result = f"Задания от ученика {user.name} {user.surname}\n\
+{task.question['question']}\n\
+Предлагаемый правильный ответ: {task.question['correct']}\n\
+    "
+    return result
+
+def task_output_student(task):
+    user = s.query(Users).get(task.user_id)
+    if task.question['test']:
+        result = f"Задания от ученика {user.name} {user.surname}\n\
+{task.question['question']}\n\
+A - {task.question['answer'][0]}\n\
+B - {task.question['answer'][1]}\n\
+C - {task.question['answer'][2]}\n\
+D - {task.question['answer'][3]}\n"
+    else:
+        result = f"Задание от  {user.name} {user.surname}\n\
+{task.question['question']}\n\
+    "
+    return result
+
+
+create_new_season()
+
+
