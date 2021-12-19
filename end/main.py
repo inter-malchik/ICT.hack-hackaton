@@ -47,21 +47,21 @@ def welcome(message):
         bot.send_message(message.chat.id, "Привет! Я бот для обучения с элементами геймификаций.")
         user_answer = Question(message.chat.id)
         registration[message.chat.id] = user_answer
-        msg = bot.send_message(user_answer.chat_id, 'Зарегистрируйся. Введи свое имя')
+        msg = bot.send_message(user_answer.chat_id, 'Зарегистрируйся. Введи свое имя.')
         bot.register_next_step_handler(msg, process_registration_name)
     else:
-        bot.send_message(message.chat.id, "Вы уже зарегистрированы")
+        bot.send_message(message.chat.id, "Вы уже зарегистрированы.")
 
 def process_registration_name(message):
     user_answer = registration[message.chat.id]
     user_answer.name = message.text
-    msg = bot.send_message(user_answer.chat_id, 'Введите фамилию')
+    msg = bot.send_message(user_answer.chat_id, 'Введите фамилию:')
     bot.register_next_step_handler(msg, process_registration_surname)
 
 def process_registration_surname(message):
     user_answer = registration[message.chat.id]
     user_answer.surname = message.text
-    msg = bot.send_message(user_answer.chat_id, 'Введите ISU номер')
+    msg = bot.send_message(user_answer.chat_id, 'Введите ISU номер:')
     bot.register_next_step_handler(msg, process_registration_ISU)
 
 def process_registration_ISU(message):
@@ -78,13 +78,13 @@ def process_registration_is_teacher(message):
     elif answer == 'Нет':
         user_answer.is_teacher = False
     del registration[user_answer.chat_id]
-
+    bot.send_message(message.chat.id, 'Вы успешно зарегистрировались!')
 @bot.message_handler(commands=['newtask'])
 def add_task(message):
-    bot.send_message(message.chat.id, "Создание задания")
+    bot.send_message(message.chat.id, "Создание задания.")
     user_task = Task(message.chat.id)
     tasks[message.chat.id] = user_task
-    msg = bot.send_message(user_task.user_id, 'Оно будет тестовым?:')
+    msg = bot.send_message(user_task.user_id, 'Оно будет тестовым?')
     bot.register_next_step_handler(msg, process_get_is_test)
 
 def process_get_is_test(message):
@@ -101,7 +101,7 @@ def process_create_question(message):
     user_task = tasks[message.chat.id]
     user_task.question['question'] = message.text
     if user_task.question['test']:
-        msg = bot.send_message(user_task.user_id, 'Отлично. Задание будет состоять из 4 вариантов ответа (A, B, C, D). Введите соответственно через пробел варианты ответов, которые будут доступны')
+        msg = bot.send_message(user_task.user_id, 'Отлично. Задание будет состоять из 4 вариантов (A, B, C, D). Введите соответственно через пробел варианты ответов, которые будут доступны')
         bot.register_next_step_handler(msg, process_get_answers_test)
     else:
         msg = bot.send_message(user_task.user_id, 'Отлично. Введите правильный ответ')
@@ -145,7 +145,7 @@ def process_get_teacher_check(message):
 @bot.message_handler(commands='default_task')
 def give_default_task(message):
     if is_teacher(message.chat.id):
-        bot.send_message(message.chat.id, 'Вы учитель')
+        bot.send_message(message.chat.id, 'Вы преподавать')
     else:
         passed_tasks = s.query(Completed_tasks).join(Students).join(Users).filter(Users.user_id == message.chat.id).all()
         tasks_quest = s.query(Tasks).filter(Tasks.check and is_teacher(Tasks.user_id)).all()
@@ -165,6 +165,9 @@ def process_get_answer_from_student(message):
     task = task_default[message.chat.id]
     if str(task.question['correct']) == message.text:
         bot.send_message(message.chat.id, 'Это правильный ответ!')
+        member_curr_season = s.query(Current_season).join(Students).join(Users).filter(Users.user_id == message.chat.id).first()
+        member_curr_season.points += 10
+        s.commit()
     else:
         bot.send_message(message.chat.id, 'Это неправильный ответ!')
     new_completed = Completed_tasks()
@@ -172,5 +175,15 @@ def process_get_answer_from_student(message):
     new_completed.task_id = task.question_id
     s.add(new_completed)
     s.commit()
+
+@bot.message_handler(func=lambda message: True)
+def status(message):
+    bot.send_message(message.chat.id, information_output(message.chat.id))
+
+@bot.message_handler(commands='battle')
+def choice_target(message):
+    bot.send_message(message.chat.id, 'Это правильный ответ!')
+
+
 bot.infinity_polling()
 
