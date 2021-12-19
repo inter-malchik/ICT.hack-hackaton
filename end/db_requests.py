@@ -89,7 +89,7 @@ def get_task():
 def task_output(task):
     user = s.query(Users).get(task.user_id)
     if task.question['test']:
-        result = f"Задания от студента {user.name} {user.surname}\n\
+        result = f"Задания от {user.name} {user.surname}\n\
 {task.question['question']}\n\
 A - {task.question['answer'][0]}\n\
 B - {task.question['answer'][1]}\n\
@@ -121,18 +121,19 @@ D - {task.question['answer'][3]}\n"
 def information_output(user_id):
     user = s.query(Users).filter(Users.user_id == user_id).first()
     result = ''
-    commands = ''
+    commands = f'Введите любое сообщение, чтобы узнать статус в текущем сезоне\n/newtask - создать новое задание\n'
     if is_teacher(user_id):
-        result += f"Вы преподаватель - {user.name} {user.surname}. ИСУ номер: {user.ISU_id}\n"
-        commands = f''
+        result += f"Вы преподаватель - {user.name} {user.surname}. ИСУ номер: {user.ISU_id} \n"
+        commands += f'/checktask - одобрить задания студентов\n'
     else:
-        result += f"Вы студент - {user.name} {user.surname}. \nИСУ номер: {user.ISU_id}\n"
+        result += f"Вы студент - {user.name} {user.surname}. \nИСУ номер: {user.ISU_id} \n"
+        commands += f'/defaulttask - решить обычное задание учителя'
     result += f'Текущий сезон:\n'
     curr_season = s.query(Current_season).all()
     for i in sorted(curr_season, key=lambda x: x.points, reverse=True):
-        result+= f"{i.Students.Users.name} {i.Students.Users.surname} {i.Students.Users.ISU_id} - {i.points}\n"
+        result += f"{i.Students.Users.name} {i.Students.Users.surname} {i.Students.Users.ISU_id} - {i.points}\n"
 
-
+    result += commands
     return result
 
 
